@@ -45,9 +45,20 @@ class CardanoWorker {
     constructor(sender) {
         if(sender != undefined) {
             this.sender = cardanocliJs.wallet(sender);
+
+            // The all mighty mint script
             this.mintScript = {
-                keyHash: cardanocliJs.addressKeyHash(this.sender.name),
-                type: 'sig'
+                type: 'all',
+                scripts: [
+                    { type : 'before'
+                      // should expire June 12th at 12:00 PM
+                    , slot : 31721965
+                    },
+                    { keyHash: cardanocliJs.addressKeyHash(this.sender.name),
+                      type: 'sig'
+                    }
+                    
+                ]
             };
             this.policy = cardanocliJs.transactionPolicyid(this.mintScript);
             this.tokenKey  = `${this.policy}.${this.coinName}`;
