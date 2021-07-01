@@ -13,5 +13,5 @@ const worker = new cardanoWorker.CardanoWorker(argv.wallet);
 if(runCommand === 'work') {
     worker.work();
 } else if(runCommand === 'query') {
-    worker.queryUTxO();
+    console.log(worker.queryUTxO());
 } 

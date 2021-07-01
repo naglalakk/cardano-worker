@@ -17,12 +17,9 @@ Query UTxO for a specific wallet
     
     node worker.js query --wallet TestWallet
 
-Create a wallet 
 
-    node worker.js createWallet --name TestWallet
-
-
-This worker uses the Token API of [donnabot-service](https://github.com/naglalakk/donnabot-service) and
+This worker uses the Token API of
+[landscape-service](https://github.com/naglalakk/landscape-service) and
 [blockfrost.io](https://blockfrost.io) for transaction info
 
 

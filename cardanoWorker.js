@@ -1,6 +1,8 @@
 const CardanoCli = require('cardanocli-js');
 const axios = require('axios').default;
 const utils = require('./utils.js');
+const logger = require('./utils/logger').logger;
+const fs = require('fs');
 require('dotenv').config()
 
 // config
@@ -32,7 +34,7 @@ const RECV_WALLET = process.env.RECV_WALLET;
 
 
 class CardanoWorker {
-    LOOP_INTERVAL = 1000 * 60;
+    LOOP_INTERVAL = 5000 * 60;
     DEFAULT_FEE = cardanocliJs.toLovelace(3);
     SEND_AMOUNT = 10000000
     sender = undefined;
@@ -45,23 +47,13 @@ class CardanoWorker {
     constructor(sender) {
         if(sender != undefined) {
             this.sender = cardanocliJs.wallet(sender);
-
             // The all mighty mint script
-            this.mintScript = {
-                type: 'all',
-                scripts: [
-                    { type : 'before'
-                      // should expire June 12th at 12:00 PM
-                    , slot : 31721965
-                    },
-                    { keyHash: cardanocliJs.addressKeyHash(this.sender.name),
-                      type: 'sig'
-                    }
-                    
-                ]
-            };
-            this.policy = cardanocliJs.transactionPolicyid(this.mintScript);
-            this.tokenKey  = `${this.policy}.${this.coinName}`;
+            var self = this;
+            fs.readFile('policy/policy.json', 'utf8', function(err, data) {
+                self.mintScript = JSON.parse(data);
+                self.policy = cardanocliJs.transactionPolicyid(self.mintScript);
+                self.tokenKey  = `${self.policy}.${self.coinName}`;
+            })
         }
     }
 
@@ -74,7 +66,7 @@ class CardanoWorker {
 
             tokenAPI.post('/tokens/transactions/update', clone)
                     .then((data) => {
-                        console.log(`Broadcast completed for op: ${op}, txHash: ${txHash}, status: ${status}`);
+                        logger.info(`Broadcast completed for op: ${op}, txHash: ${txHash}, status: ${status}`);
                         resolve(data)
                     }) 
                     .catch((err) => { reject(err); });
@@ -85,7 +77,6 @@ class CardanoWorker {
         return new Promise((resolve, reject) => {
             const self = this;
             const metadata = JSON.parse(transaction.token.metadata.replace(/\\"/g, '"'));
-            console.log(metadata);
             const amount   = 1; // TODO: should be included in TokenTransaction
 
 
@@ -105,6 +96,9 @@ class CardanoWorker {
                         amount: 1, 
                         token: self.tokenKey 
                     }],
+                    invalidBefore: self.mintScript.scripts.filter(x => x.type == 'after')[0].slot,
+                    invalidHereAfter: self.mintScript.scripts.filter(x => x.type == 'before')[0].slot,
+
                     witnessCount: 2,
                     metadata: metadata
                 }
@@ -153,7 +147,7 @@ class CardanoWorker {
 
     send(utxo, transaction, recvAddr) {
         return new Promise((resolve, reject) => {
-            console.log('Sending token');
+            logger.info('Sending token');
             const amount = 1;
 
             const txInfo = {
@@ -204,7 +198,7 @@ class CardanoWorker {
 
 
     processUtxo(utxo, transactions) {
-        console.log(`processing utxo: ${utxo.txHash}`);
+        logger.info(`processing utxo: ${utxo.txHash}`);
         const self = this;
         txAPI.get(`/txs/${utxo.txHash}/utxos`).then((utxos) => {
             var recvAddr = utxos.data.inputs[0].address;
@@ -214,7 +208,7 @@ class CardanoWorker {
                 const transaction = hit[0];
                 self.mint(utxo, transaction).then((txHash) => {
                     const intervalId = setInterval(() => {
-                        console.log('waiting for txHash: ' + txHash);
+                        logger.info('waiting for txHash: ' + txHash);
                         var filt = self.sender.balance().utxo.filter(x => x.txHash === txHash)
                         if(filt.length) {
                             clearInterval(intervalId);
@@ -229,7 +223,7 @@ class CardanoWorker {
     }
 
     loop() {
-        console.log('New worker loop started');
+        logger.info('New worker loop started');
         const self = this;
         const utxos = this.sender.balance().utxo;
         tokenAPI.get('/tokens/transactions/?status=request').then((response) => {
@@ -242,12 +236,11 @@ class CardanoWorker {
     }
 
     queryUTxO() {
-        console.log(this.sender.balance().utxo);
         return this.sender.balance().utxo;
     }
 
     work() {
-        console.log('cardano-worker running...');
+        logger.info('production cardano-worker running...:)');
         this.loop();
         this.intervalId = setInterval(this.loop.bind(this), this.LOOP_INTERVAL)
     }

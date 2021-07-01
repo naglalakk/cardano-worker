@@ -1,10 +1,12 @@
 const CardanoCli = require('cardanocli-js');
-const shelleyGenesisPath = '/home/kott/cardano/config/testnet-shelley-genesis.json';
-const cardanocliJs = new CardanoCli({ 
-    network: "testnet-magic 1097911063",
-    shelleyGenesisPath: shelleyGenesisPath,
-    socketPath: '/home/kott/cardano/cardano-node/state-node-testnet/node.socket'
+require('dotenv').config()
+
+const cardanocliJs = new CardanoCli({
+    network: process.env.NETWORK,
+    shelleyGenesisPath: process.env.SHELLEY_GENESIS_PATH,
+    socketPath: process.env.CARDANO_NODE_SOCKET_PATH
 });
+
 
 exports.transaction = function(sender, receiver, amount) {
 

@@ -26,8 +26,8 @@ const createPool = (name) => {
   return cardanocliJs.pool(name);
 };
 
-const sender  = createWallet("TestSender");
-const receiver = createWallet("TestReceiver");
+const sender  = createWallet("TestSenderProduction");
+const receiver = createWallet("TestReceiverProduction");
 
 console.log(sender.paymentAddr);
 console.log(receiver.paymentAddr);

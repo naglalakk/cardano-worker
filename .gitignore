@@ -3,3 +3,5 @@ priv/
 tmp/
 *.log
 .env
+startup.sh
+logs/
