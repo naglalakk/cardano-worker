@@ -240,7 +240,7 @@ class CardanoWorker {
     }
 
     work() {
-        logger.info('production cardano-worker running...:)');
+        logger.info('cardano-worker running...');
         this.loop();
         this.intervalId = setInterval(this.loop.bind(this), this.LOOP_INTERVAL)
     }
